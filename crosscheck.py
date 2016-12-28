@@ -126,6 +126,7 @@ class InstanceVariableVisitor(SmtLib25Visitor):
             self.variables.append(varname)
 
 z3_path = "/home/mtrberzi/projects/z3str/build/z3"
+z3str2_path = "/home/mtrberzi/projects/z3str/Z3-str/Z3-str.py"
             
 def main(argv):
     instancePath = argv[1]
@@ -144,9 +145,52 @@ def main(argv):
     responseV.visit(responseTree)
     print(responseV.status)
     if responseV.status == "sat":
+        modelAssertions = []
         for var in v.variables:
             if var in responseV.model.keys():
                 print(var + " = " + responseV.model[var])
+                modelAssertions.append("(assert (= " + var + " " + responseV.model[var] + "))")
+        # now open the original instance and copy it to a temporary file,
+        # prepending the model assertions when we first see (check-sat)
+        checkfilepath = ""
+        with open(argv[1], 'r') as inst:
+            tmp_f = tempfile.NamedTemporaryFile(mode="w+", suffix=".smt2", delete=False)
+            checkfilepath = tmp_f.name
+            lines = inst.readlines()
+            for line in lines:
+                if "set-logic" in line:
+                    continue
+                if "check-sat" in line:
+                    for a in modelAssertions:
+                        tmp_f.write(a)
+                tmp_f.write(line)
+            tmp_f.flush()
+            tmp_f.close()
+        # verify model with z3str2
+        (z3str2_code, z3str2_stdout, z3str2_stderr) = run([z3str2_path, "-f", checkfilepath], timeout=25)
+        z3str2_status = None
+        for line in z3str2_stdout.split("\n"):
+            if "SAT" in line:
+                z3str2_status = "sat"
+                break
+            elif "UNSAT" in line:
+                z3str2_status = "unsat"
+                break
+            elif "UNKNOWN" in line:
+                z3str2_status = "unknown"
+                break
+            else:
+                continue
+        if z3str2_status is None:
+            print("ERROR: could not parse z3str2 output")
+            print(z3str2_stdout)
+        elif z3str2_status == "sat":
+            print("z3str2 status: sat (OK)")
+        else:
+            print("z3str2 status: " + z3str2_status + " (FAIL)")
+        # delete temp file
+        os.remove(checkfilepath)
+    
 
 if __name__ == '__main__':
     main(sys.argv)
