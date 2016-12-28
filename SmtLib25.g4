@@ -26,10 +26,14 @@ fun_def : SYMBOL '(' sorted_var* ')' sort term ;
 
 /** General Tokens **/
 
-NUMERAL : '0' | [1-9][0-9]* ;
+INTEGER : '0' | [1-9][0-9]* ;
 
-STRING : '"' (QUOTEESCAPE|.)*? '"' ;
+numeral : INTEGER;
+
+STRINGCONSTANT : '"' (QUOTEESCAPE|.)*? '"' ;
 fragment QUOTEESCAPE : '""' ;
+
+string : STRINGCONSTANT;
 
 SYMBOL : SIMPLE_SYMBOL | COMPLEX_SYMBOL ;
 /** A simple symbol is a non-empty sequence of letters, digits, and the characters
@@ -45,13 +49,13 @@ KEYWORD : ':' SIMPLE_SYMBOL ;
 
 /** S-Expressions **/
 
-spec_constant : NUMERAL | /* DECIMAL | HEXADECIMAL | BINARY | */ STRING ;
+spec_constant : numeral | /* DECIMAL | HEXADECIMAL | BINARY | */ string ;
 s_expr : spec_constant | SYMBOL | KEYWORD | '(' s_expr* ')' ;
 
 /** Identifiers **/
 
-identifier : SYMBOL | '(' '_' SYMBOL INDEX+ ')';
-INDEX : NUMERAL | SYMBOL ;
+identifier : SYMBOL | '(' '_' SYMBOL index+ ')';
+index : numeral | SYMBOL ;
 
 /** Sorts **/
 
@@ -81,7 +85,7 @@ term : spec_constant
 
 response : (error_response | CHECK_SAT_RESPONSE | get_model_response)+;
 
-error_response : '(' 'error' STRING ')' ;
+error_response : '(' 'error' string ')' ;
 CHECK_SAT_RESPONSE : 'sat' | 'unsat' | 'timeout' | 'unknown';
 /* The following is specific to Z3 and is not SMT-LIB 2.5 standard. */
 get_model_response : '(' 'model' model_response* ')' ;
