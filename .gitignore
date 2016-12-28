@@ -1,0 +1,5 @@
+SmtLib*.py
+*.tokens
+*~
+__pycache__/**
+
