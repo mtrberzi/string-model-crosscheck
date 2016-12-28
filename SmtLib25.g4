@@ -6,7 +6,6 @@ smtfile : script | response;
 
 script : command* ;
 
-B_VALUE : 'true' | 'false' ;
 option : 'produce-models' B_VALUE ;
 
 command :
@@ -83,13 +82,14 @@ term : spec_constant
 
 /** Responses **/
 
-response : (error_response | CHECK_SAT_RESPONSE | get_model_response)+;
+response : (error_response | check_sat_response | get_model_response)+;
 
 error_response : '(' 'error' string ')' ;
-CHECK_SAT_RESPONSE : 'sat' | 'unsat' | 'timeout' | 'unknown';
+check_sat_response : 'sat\n' | 'unsat\n' | 'timeout\n' | 'unknown\n';
 /* The following is specific to Z3 and is not SMT-LIB 2.5 standard. */
 get_model_response : '(' 'model' model_response* ')' ;
 
 model_response : '(' 'define-fun' fun_def ')' ;
 
+B_VALUE : 'true' | 'false' ;
 WS: [ \n\t\r]+ -> skip;
