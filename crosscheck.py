@@ -106,6 +106,20 @@ class ResponseVisitor(SmtLib25Visitor):
     def visitIdentifier(self, ctx):
         return ctx.getText()
 
+    def visitTerm(self, ctx):
+        # handle terms like "( - 1 )"
+        if ctx.getChildCount() == 1:
+            return self.visit(ctx.getChild(0))
+        elif ctx.getChildCount() > 1:
+            operator = ctx.getChild(1).getText()
+            if operator == "-":
+                return "(- " + self.visit(ctx.getChild(2)) + ")"
+            else:
+                raise ValueError("Unrecognized operator " + operator)
+        else:
+            print(ctx.getText())
+            raise ValueError("Not Implemented Yet")
+
 # Parse an instance and collect all variables declared by (declare-fun), (declare-const), etc.
 class InstanceVariableVisitor(SmtLib25Visitor):
     def __init__(self):
@@ -126,7 +140,7 @@ class InstanceVariableVisitor(SmtLib25Visitor):
             self.variables.append(varname)
 
 z3_path = "/home/mtrberzi/projects/z3str/build/z3"
-z3str2_path = "/home/mtrberzi/projects/z3str/Z3-str/Z3-str.py"
+z3str2_path = "/home/mtrberzi/solvers/z3/z3str2/Z3-str.py"
             
 def main(argv):
     instancePath = argv[1]
@@ -138,6 +152,7 @@ def main(argv):
     v = InstanceVariableVisitor()
     v.visit(tree)
     (code, stdout, stderr) = run([z3_path, "-T:20", "dump_models=true", instancePath], timeout=25)
+    print(stdout)
     responseStream = InputStream(stdout)
     responseParser = SmtLib25Parser(CommonTokenStream(SmtLib25Lexer(responseStream)))
     responseTree = responseParser.smtfile()
